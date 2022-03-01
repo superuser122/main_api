@@ -38,6 +38,7 @@ pub enum UserRole {
     User,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub enum System {
     Invoicing
 }
