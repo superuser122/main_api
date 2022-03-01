@@ -10,6 +10,7 @@ pub struct User{
     pub password: String,
     pub email: String,
     pub role: UserRole,
+    pub database: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,6 +19,8 @@ pub struct NewUser{
     pub password: String,
     pub email: String,
     pub role: UserRole,
+    pub database: String,
+
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -36,5 +39,6 @@ pub enum UserRole {
 pub struct UserSession {
     pub id: i64,
     pub user_id: String,
+    pub database: String,
     pub dt:  DateTime<Local>,
 }
