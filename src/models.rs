@@ -10,6 +10,7 @@ pub struct User{
     pub password: String,
     pub email: String,
     pub role: UserRole,
+    pub system: Vec<System>,
     pub database: String,
 }
 
@@ -19,6 +20,7 @@ pub struct NewUser{
     pub password: String,
     pub email: String,
     pub role: UserRole,
+    pub system: Vec<System>,
     pub database: String,
 
 }
@@ -36,9 +38,14 @@ pub enum UserRole {
     User,
 }
 
+pub enum System {
+    Invoicing
+}
+
 pub struct UserSession {
     pub id: i64,
     pub user_id: String,
     pub database: String,
+    pub system: Vec<System>,
     pub dt:  DateTime<Local>,
 }
