@@ -1,0 +1,54 @@
+
+==================
+LINUX CHEAT SHEET
+==================
+
+RUST 
+
+//Χωρίς αυτό δεν κάνει compile στο linux
+sudo apt install build-essential
+
+//Test με εκτύπωση στην κονσόλα 
+cargo test -- --nocapture
+
+
+DOCKER
+
+//Εγκατάσταση docker 
+sudo apt install docker.io
+
+//Δείξε όλα τα images 
+sudo docker image ls
+
+//Image download (ex. redis)
+sudo docker pull redis
+
+
+//Create a container 
+sudo docker run --name my-first-redis -d redis
+
+//List containers
+sudo docker container ls
+
+//Start docker container
+sudo docker start containerName
+//or
+sudo docker start containerId
+
+//Check container status
+sudo docker ps
+
+//Execute docker commands
+sudo docker exec -it containername bash
+
+
+CLI
+
+//List all services
+systemctl --type=service
+
+//Check service status
+systemctl status someservice
+
+
+

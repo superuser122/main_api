@@ -5,8 +5,6 @@ pub mod databases;
 pub mod endpoints;
 
 
-
-
 #[rocket::main]
 async fn main() {
     let _ = rocket::build()
