@@ -1,53 +1,62 @@
+#
+#==================
+#LINUX CHEAT SHEET
+#==================
 
-==================
-LINUX CHEAT SHEET
-==================
 
-RUST 
 
-//Χωρίς αυτό δεν κάνει compile στο linux
+#RUST 
+
+#Χωρίς αυτό δεν κάνει compile στο linux
 sudo apt install build-essential
 
-//Test με εκτύπωση στην κονσόλα 
+#Test με εκτύπωση στην κονσόλα 
 cargo test -- --nocapture
 
 
-DOCKER
+#DOCKER
 
-//Εγκατάσταση docker 
+#Εγκατάσταση docker 
 sudo apt install docker.io
 
-//Δείξε όλα τα images 
+#Δείξε όλα τα images 
 sudo docker image ls
 
-//Image download (ex. redis)
+#Image download (ex. redis)
 sudo docker pull redis
 
 
-//Create a container 
+#Create a container 
 sudo docker run --name my-first-redis -d redis
 
-//List containers
+#List containers
 sudo docker container ls
 
-//Start docker container
+#Start docker container
 sudo docker start containerName
-//or
+#or
 sudo docker start containerId
 
-//Check container status
+#Check container status
 sudo docker ps
 
-//Execute docker commands
+#Execute docker commands
 sudo docker exec -it containername bash
 
+#Docker mongo run container
+sudo docker run --name mongo-on-docker -d -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=developer -e MONGO_INITDB_ROOT_PASSWORD=deve-1992 mongo 
 
-CLI
+#Mongo url 
+mongodb://developer:deve-1992@localhost:27888/
 
-//List all services
+
+
+#CLI
+
+#List all services
 systemctl --type=service
 
-//Check service status
+#Check service status
 systemctl status someservice
 
 
