@@ -50,3 +50,8 @@ pub struct UserSession {
     pub system: Vec<System>,
     pub dt:  DateTime<Local>,
 }
+
+#[derive(Debug)]
+pub struct DbClients {
+    pub redis : redis::Client,
+}
