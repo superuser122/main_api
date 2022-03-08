@@ -59,5 +59,8 @@ systemctl --type=service
 #Check service status
 systemctl status someservice
 
+#Clone disks 
+sudo dd if=/dev/sdb of=/dev/sdc status=progress
+
 
 
