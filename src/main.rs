@@ -3,12 +3,9 @@ pub mod models;
 pub mod services;
 pub mod databases;
 pub mod endpoints;
-<<<<<<< HEAD
 use dotenv::dotenv;
 use std::env;
 use models::DbClients;
-=======
->>>>>>> b192d705e26d2170378f288e88546599f5acfd51
 
 
 #[rocket::main]
