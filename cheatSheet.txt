@@ -49,6 +49,8 @@ sudo docker run --name mongo-on-docker -d -p 27017:27017 -e MONGO_INITDB_ROOT_US
 #Mongo url 
 mongodb://developer:deve-1992@localhost:27888/
 
+#mongo cli
+sudo docker exec -it mongo-on-docker mongo -u developer -p deve-1992
 
 
 #CLI
