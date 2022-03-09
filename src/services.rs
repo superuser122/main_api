@@ -14,6 +14,22 @@ async fn get_user(database : mongodb::Database, user_name: String)-> Result<User
         Some(user) => Ok(user),
         None => Err("User name not found".to_string())
     }
+}
+
+
+
+//Unit testing
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[async_test]
+    async fn get_user_test() {
+        assert!(true);
+    }
+
+
 
 }
 
