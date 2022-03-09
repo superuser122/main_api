@@ -54,4 +54,5 @@ pub struct UserSession {
 #[derive(Debug)]
 pub struct DbClients {
     pub redis : redis::Client,
+    pub mongo : mongodb::Database,
 }
