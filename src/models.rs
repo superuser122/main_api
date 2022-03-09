@@ -56,3 +56,8 @@ pub struct DbClients {
     pub redis : redis::Client,
     pub mongo : mongodb::Database,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ApiError{
+    pub error: String 
+}
