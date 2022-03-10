@@ -5,24 +5,14 @@ use mongodb::bson::oid::ObjectId;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User{
-    pub _id : ObjectId,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
     pub user_name: String,
     pub password: String,
     pub email: String,
     pub role: UserRole,
     pub system: Vec<System>,
     pub database: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct NewUser{
-    pub user_name: String,
-    pub password: String,
-    pub email: String,
-    pub role: UserRole,
-    pub system: Vec<System>,
-    pub database: String,
-
 }
 
 #[derive(Serialize, Deserialize, Debug)]

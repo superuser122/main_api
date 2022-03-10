@@ -63,4 +63,8 @@ systemctl status someservice
 sudo dd if=/dev/sdb of=/dev/sdc status=progress
 
 
+#VISUAL STUDIO CODE
 
+Editor > Unicode Highlight: Non Basic ASCII
+
+Editor > Unicode Highlight: Ambiguous Characters
