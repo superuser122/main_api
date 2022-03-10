@@ -20,7 +20,7 @@ async fn main() {
     let redis = redis::Client::open(redis_url).expect("There was an error parsing redis client");
     let mongo = mongodb::Client::with_uri_str(mongo_url)
                             .await.expect("There was an error parsing mongodb client")
-                            .database("users");
+                            .database("userdb");
 
     //If the clients are ok we put them in a state to use them across endpoints 
     let db_state = DbClients {redis, mongo};
