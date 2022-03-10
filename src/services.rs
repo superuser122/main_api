@@ -1,12 +1,15 @@
 use crate::models::{User, LoginUser, UserSession};
 use mongodb::{bson::{doc, oid::ObjectId}, Client,};
+use bcrypt::{DEFAULT_COST, hash, verify};
 
 pub async fn login_service(database :&mut mongodb::Database, login_user: LoginUser)-> Result<String, String>{
     let user = get_user(database, &login_user.user_name).await?;
-    let pwd_hsh = login_user.password; //TODO: hash the password
-    if pwd_hsh != user.password { 
-        return Err("User name not found".to_string());
+    let pwd_hsh = hash(&login_user.password, DEFAULT_COST).map_err(|e| e.to_string())?; 
+    if !verify(&user.password, &pwd_hsh).map_err(|e| e.to_string())?{
+        return Err("Invalid username or password".to_string());
     }
+
+
     todo!();
 }
 
@@ -16,7 +19,7 @@ async fn get_user(database :&mut  mongodb::Database, user_name: &String)-> Resul
     let user = user_collection.find_one(filter, None).await.map_err(|e| e.to_string())?;
     match user{
         Some(user) => Ok(user),
-        None => Err("User name not found".to_string())
+        None => Err("Invalid username or password".to_string())
     }
 }
 
