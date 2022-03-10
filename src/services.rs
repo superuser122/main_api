@@ -1,19 +1,19 @@
-use crate::models::{User, LoginUser, UserSession};
+use crate::models::{User, LoginUser, UserSession, DbClients};
 use mongodb::{bson::{doc, oid::ObjectId}, Client,};
 use bcrypt::{DEFAULT_COST, hash, verify};
+use rocket::State;
 
-pub async fn login_service(database :&mut mongodb::Database, login_user: LoginUser)-> Result<String, String>{
-    let user = get_user(database, &login_user.user_name).await?;
+
+pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Result<String, String>{
+    let user = get_user(&state.mongo, &login_user.user_name).await?;
     let pwd_hsh = hash(&login_user.password, DEFAULT_COST).map_err(|e| e.to_string())?; 
     if !verify(&user.password, &pwd_hsh).map_err(|e| e.to_string())?{
         return Err("Invalid username or password".to_string());
     }
-
-
     todo!();
 }
 
-async fn get_user(database :&mut  mongodb::Database, user_name: &String)-> Result<User, String>{
+async fn get_user(database : &mongodb::Database, user_name: &String)-> Result<User, String>{
     let user_collection = database.collection::<User>("users");
     let filter = doc!{"user_name": user_name};
     let user = user_collection.find_one(filter, None).await.map_err(|e| e.to_string())?;
@@ -54,6 +54,11 @@ mod tests {
         let user_name = "vasilis".to_string();
         let user = get_user(&mut mongo, &user_name).await;
         assert!(user.is_ok());
+        if let Ok(user) = user{ 
+            println!("{:?}" , user);
+
+        }
+
     }
 }
 
