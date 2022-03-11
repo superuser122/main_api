@@ -8,8 +8,7 @@ use chrono::Utc;
 
 pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Result<String, String>{
     let user = get_user(&state.mongo, &login_user.user_name).await?;
-    let pwd_hsh = hash(&login_user.password, DEFAULT_COST).map_err(|e| e.to_string())?; 
-    if !verify(&user.password, &pwd_hsh).map_err(|e| e.to_string())?{
+    if !verify( &login_user.password,&user.password).map_err(|e| e.to_string())?{
         return Err("Invalid username or password".to_string());
     }
     create_session(&user, &state.mongo).await
