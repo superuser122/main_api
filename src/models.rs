@@ -1,6 +1,6 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
-use mongodb::bson::oid::ObjectId;
+use mongodb::bson::{Bson, oid::ObjectId};
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -28,17 +28,20 @@ pub enum UserRole {
     User,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum System {
     Invoicing
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UserSession {
-    pub id: i64,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
     pub user_id: String,
     pub database: String,
     pub system: Vec<System>,
-    pub dt:  DateTime<Local>,
+    #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+    pub dt:  DateTime<Utc>,
 }
 
 #[derive(Debug)]

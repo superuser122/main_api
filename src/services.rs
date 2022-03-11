@@ -1,7 +1,8 @@
 use crate::models::{User, LoginUser, UserSession, DbClients};
-use mongodb::{bson::{doc, oid::ObjectId}, Client,};
+use mongodb::{bson::{doc, oid::ObjectId,}, Client,};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use rocket::State;
+use chrono::Utc;
 
 
 pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Result<String, String>{
@@ -23,8 +24,20 @@ async fn get_user(database : &mongodb::Database, user_name: &String)-> Result<Us
     }
 }
 
-async fn create_session() -> Result<String, String>{
-    todo!();
+async fn create_session(user: &User, database : &mongodb::Database,) -> Result<String, String>{
+    let session_collection = database.collection("sessions");
+    let session = UserSession{
+        id: None,
+        user_id: user.id.unwrap().to_string(),
+        database: user.database.clone(),
+        system: user.system.to_owned(),
+        dt: Utc::now()
+    };
+    let session_ser = bson::to_bson(&session).map_err(|e| e.to_string())?;
+    let session_doc = session_ser.as_document().unwrap();
+    let ins_id =session_collection.insert_one(session_doc.to_owned(),  None).await.map_err(|e| e.to_string())?;
+    Ok(ins_id.inserted_id.to_string())
+
 }
 
 async fn delete_session()-> Result<(), String>{
