@@ -11,6 +11,8 @@ pub struct User{
     pub password: String,
     pub email: String,
     pub role: UserRole,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_users : Option<u8>,
     pub system: Vec<System>,
     pub database: String,
 }
@@ -40,6 +42,8 @@ pub struct UserSession {
     pub user_id: String,
     pub database: String,
     pub system: Vec<System>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_users : Option<u8>,
     #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
     pub dt:  DateTime<Utc>,
 }
@@ -48,6 +52,11 @@ pub struct UserSession {
 pub struct DbClients {
     pub redis : redis::Client,
     pub mongo : mongodb::Database,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SessionId{
+    pub session_id: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]

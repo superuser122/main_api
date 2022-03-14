@@ -33,6 +33,7 @@ async fn create_session(user: &User, database : &mongodb::Database,) -> Result<S
         user_id: user.id.unwrap().to_string(),
         database: user.database.clone(),
         system: user.system.to_owned(),
+        max_users: user.max_users.to_owned(),
         dt: Utc::now()
     };
     let session_ser = bson::to_bson(&session).map_err(|e| e.to_string())?;
@@ -113,6 +114,7 @@ mod tests {
             password: "sdjhfsdjkhjfdh".to_string(),
             email: "vasileiosnl@gmail.com".to_string(),
             role : crate::models::UserRole::Admin,
+            max_users: None,
             system: vec![ crate::models::System::Invoicing ],
             database: "userdb".to_string()
         };
