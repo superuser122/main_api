@@ -4,6 +4,7 @@ use mongodb::{bson::{doc, oid::ObjectId,}, Client,Collection};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use rocket::State;
 use chrono::Utc;
+use std::str::FromStr;
 
 
 pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Result<String, String>{
@@ -14,7 +15,7 @@ pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Re
     create_session(&user, &state.mongo).await
 }
 
-//Get user from mongo database
+//Get user from mongo database by name
 async fn get_user(database : &mongodb::Database, user_name: &String)-> Result<User, String>{
     let user_collection = database.collection::<User>("users");
     let filter = doc!{"user_name": user_name};
@@ -56,8 +57,20 @@ async fn delete_session(user_id: String, session_collection: &Collection<Documen
     
 }
 
-async fn get_session()-> Result<Option<UserSession>, String>{
-    todo!();
+async fn get_session(session_id: String, database : &mongodb::Database)-> Result<Option<UserSession>, String>{
+    let session_collection = database.collection::<UserSession>("sessions");
+    let obj_id = ObjectId::from_str(session_id.as_str()).map_err(|e| e.to_string())?;
+    let session = session_collection.find_one(doc! {"_id" : obj_id },None).await.map_err(|e| e.to_string())?;
+    Ok(session)
+}
+
+async fn update_session_dt(session_id: String, database : &mongodb::Database)-> Result<(), String>{
+    let session_collection = database.collection::<UserSession>("sessions");
+    let obj_id = ObjectId::from_str(session_id.as_str()).map_err(|e| e.to_string())?;
+    let filter =doc!{"_id" : obj_id };
+    let update = doc!{ "$currentDate" : {"dt" : true}};
+    session_collection.update_one(filter, update, None).await.map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 
@@ -89,8 +102,8 @@ mod tests {
             println!("{:?}" , user);
 
         }
-
     }
+
     #[async_test]
     async fn create_session_test(){
         let mongo = get_mongo().await;
@@ -105,8 +118,13 @@ mod tests {
         };
         let session_str = create_session(&user, &mongo).await.unwrap();
         println!("{:?}", session_str);
+    }
 
-
+    #[async_test]
+    async fn update_session_dt_test(){
+        let mongo = get_mongo().await;
+        let res = update_session_dt("622f06c6dbaf079589908c0f".to_string(), &mongo).await;
+        assert!(res.is_ok());
     }
 }
 
