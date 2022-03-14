@@ -26,7 +26,7 @@ async fn main() {
     let db_state = DbClients {redis, mongo};
 
     let _ = rocket::build()
-                .mount("/api", routes![endpoints::world])
+                .mount("/api", routes![endpoints::world, endpoints::login])
                 .manage(db_state)
                 .launch()
                 .await;

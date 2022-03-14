@@ -1,6 +1,6 @@
 use crate::models::{User, LoginUser, UserSession, DbClients};
 use bson::Document;
-use mongodb::{bson::{doc, oid::ObjectId,}, Client,Collection};
+use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use rocket::State;
 use chrono::Utc;
@@ -27,7 +27,7 @@ pub async fn get_user(database : &mongodb::Database, user_name: &String)-> Resul
 }
 
 pub async fn create_user(database : &mongodb::Database, mut user: User) -> Result<(), String>{
-    user.password = hash(user.password, DEFAULT_COST).map_err(|e| e.to_string())?;
+    user.password = hash(user.password, 4).map_err(|e| e.to_string())?;
     let user_collection = database.collection("users");
     let user_bson = bson::to_bson(&user).map_err(|e| e.to_string())?;
     let user_doc = match user_bson.as_document(){
@@ -47,7 +47,7 @@ pub async fn delete_user(database : &mongodb::Database, user_id: String) -> Resu
 }
 
 pub async fn update_user(database : &mongodb::Database, mut user: User) -> Result<(), String>{
-    user.password = hash(user.password, DEFAULT_COST).map_err(|e| e.to_string())?;
+    user.password = hash(user.password, 4).map_err(|e| e.to_string())?;
     let filter = doc!{"_id": user.id};
     let user_collection : Collection<Document> = database.collection("users");
     let user_bson = bson::to_bson(&user).map_err(|e| e.to_string())?;
@@ -57,6 +57,13 @@ pub async fn update_user(database : &mongodb::Database, mut user: User) -> Resul
     };
     user_collection.find_one_and_replace(filter, user_doc, None).await.map_err(|e| e.to_string())?;
     Ok(())
+}
+
+pub async fn get_users_num(database : &mongodb::Database, db_name: String)-> Result<u8, String>{
+    let user_collection : Collection<Document> = database.collection("users");
+    let filter = doc!{"database": db_name};
+    let doc_num = user_collection.count_documents(filter, None).await.map_err(|e| e.to_string())?;
+    Ok(doc_num as u8)
 }
 
 async fn create_session(user: &User, database : &mongodb::Database,) -> Result<String, String>{
@@ -84,21 +91,21 @@ async fn create_session(user: &User, database : &mongodb::Database,) -> Result<S
 
 }
 
-async fn delete_session(user_id: String, session_collection: &Collection<Document>)-> Result<(), String>{
+pub async fn delete_session(user_id: String, session_collection: &Collection<Document>)-> Result<(), String>{
     let filter = doc!{"user_id": user_id};
     let _ = session_collection.delete_many(filter, None).await.map_err(|e| e.to_string())?;
     Ok(())
     
 }
 
-async fn get_session(session_id: String, database : &mongodb::Database)-> Result<Option<UserSession>, String>{
+pub async fn get_session(session_id: String, database : &mongodb::Database)-> Result<Option<UserSession>, String>{
     let session_collection = database.collection::<UserSession>("sessions");
     let obj_id = ObjectId::from_str(session_id.as_str()).map_err(|e| e.to_string())?;
     let session = session_collection.find_one(doc! {"_id" : obj_id },None).await.map_err(|e| e.to_string())?;
     Ok(session)
 }
 
-async fn update_session_dt(session_id: String, database : &mongodb::Database)-> Result<(), String>{
+pub async fn update_session_dt(session_id: String, database : &mongodb::Database)-> Result<(), String>{
     let session_collection = database.collection::<UserSession>("sessions");
     let obj_id = ObjectId::from_str(session_id.as_str()).map_err(|e| e.to_string())?;
     let filter =doc!{"_id" : obj_id };
@@ -115,7 +122,7 @@ mod tests {
     use super::*;
     use dotenv::dotenv;
     use std::env;
-    use mongodb::{bson::{doc, oid::ObjectId,}, Client,};
+    use mongodb::bson::oid::ObjectId;
     use std::str::FromStr;
     
     async fn get_mongo() -> mongodb::Database { 
@@ -125,6 +132,27 @@ mod tests {
                             .await.unwrap()
                             .database("userdb")
     }
+
+    #[async_test]
+    async fn create_user_test() {
+        let mongo = get_mongo().await;
+        let user = User {
+            id: None,
+            user_name: "vasilis".to_string(),
+            password: "strongpassowrd".to_string(),
+            email: "vasileiosnl@gmail.com".to_string(),            role : crate::models::UserRole::Admin,
+            max_users: None,
+            system: vec![ crate::models::System::Invoicing ],
+            database: "userdb".to_string(),
+            expiration_dt: chrono::MAX_DATETIME,
+        };
+        let res = create_user(&mongo, user).await;
+
+        
+        assert!(res.is_ok());
+
+    }
+
 
     #[async_test]
     async fn get_user_test() {
@@ -141,16 +169,7 @@ mod tests {
     #[async_test]
     async fn create_session_test(){
         let mongo = get_mongo().await;
-        let user = User {
-            id: Some(ObjectId::from_str("6229fa135e61ec4dd16fc396").unwrap()),
-            user_name: "vasilis".to_string(),
-            password: "sdjhfsdjkhjfdh".to_string(),
-            email: "vasileiosnl@gmail.com".to_string(),
-            role : crate::models::UserRole::Admin,
-            max_users: None,
-            system: vec![ crate::models::System::Invoicing ],
-            database: "userdb".to_string()
-        };
+        let user = get_user(&mongo, &String::from("vasilis")).await.unwrap();
         let session_str = create_session(&user, &mongo).await.unwrap();
         println!("{:?}", session_str);
     }

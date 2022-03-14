@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
-use mongodb::bson::{Bson, oid::ObjectId};
+use mongodb::bson::oid::ObjectId;
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -15,6 +15,8 @@ pub struct User{
     pub max_users : Option<u8>,
     pub system: Vec<System>,
     pub database: String,
+    #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+    pub expiration_dt: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
