@@ -16,7 +16,7 @@ pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Re
 }
 
 //Get user from mongo database by name
-async fn get_user(database : &mongodb::Database, user_name: &String)-> Result<User, String>{
+pub async fn get_user(database : &mongodb::Database, user_name: &String)-> Result<User, String>{
     let user_collection = database.collection::<User>("users");
     let filter = doc!{"user_name": user_name};
     let user = user_collection.find_one(filter, None).await.map_err(|e| e.to_string())?;
@@ -24,6 +24,39 @@ async fn get_user(database : &mongodb::Database, user_name: &String)-> Result<Us
         Some(user) => Ok(user),
         None => Err("Invalid username or password".to_string())
     }
+}
+
+pub async fn create_user(database : &mongodb::Database, mut user: User) -> Result<(), String>{
+    user.password = hash(user.password, DEFAULT_COST).map_err(|e| e.to_string())?;
+    let user_collection = database.collection("users");
+    let user_bson = bson::to_bson(&user).map_err(|e| e.to_string())?;
+    let user_doc = match user_bson.as_document(){
+        Some(doc) => doc,
+        None => return Err("Unable to parse user doc!".to_string())
+    };
+    user_collection.insert_one(user_doc.to_owned(), None).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub async fn delete_user(database : &mongodb::Database, user_id: String) -> Result<(), String>{
+    let user_collection : Collection<Document> = database.collection("users");
+    let obj_id = ObjectId::from_str(user_id.as_str()).map_err(|e| e.to_string())?;
+    let filter = doc!{"_id": obj_id};
+    user_collection.delete_one(filter, None).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub async fn update_user(database : &mongodb::Database, mut user: User) -> Result<(), String>{
+    user.password = hash(user.password, DEFAULT_COST).map_err(|e| e.to_string())?;
+    let filter = doc!{"_id": user.id};
+    let user_collection : Collection<Document> = database.collection("users");
+    let user_bson = bson::to_bson(&user).map_err(|e| e.to_string())?;
+    let user_doc = match user_bson.as_document(){
+        Some(doc) => doc,
+        None => return Err("Unable to parse user doc!".to_string())
+    };
+    user_collection.find_one_and_replace(filter, user_doc, None).await.map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 async fn create_session(user: &User, database : &mongodb::Database,) -> Result<String, String>{
@@ -125,7 +158,8 @@ mod tests {
     #[async_test]
     async fn update_session_dt_test(){
         let mongo = get_mongo().await;
-        let res = update_session_dt("622f06c6dbaf079589908c0f".to_string(), &mongo).await;
+        let user = get_user(&mongo, &String::from("vasilis")).await.unwrap(); 
+        let res = update_session_dt(user.id.unwrap().to_string(), &mongo).await;
         assert!(res.is_ok());
     }
 }
