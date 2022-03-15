@@ -43,7 +43,7 @@ pub struct LoginUser{
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum UserRole {
     Admin,
     Owner,

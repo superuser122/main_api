@@ -1,23 +1,22 @@
-use crate::models::{User, LoginUser, UserSession, DbClients};
+use crate::models::{User, LoginUser, UserSession};
 use bson::Document;
 use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
-use bcrypt::{DEFAULT_COST, hash, verify};
-use rocket::State;
+use bcrypt::{hash, verify};
 use chrono::{Utc, Duration};
 use std::str::FromStr;
 
 
-pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Result<String, String>{
-    let user = get_user(&state.mongo, &login_user.user_name).await?;
+pub async fn login_service(database : &mongodb::Database, login_user: LoginUser)-> Result<String, String>{
+    let user = get_user(database, &login_user.user_name).await?;
     if !verify( &login_user.password,&user.password).map_err(|e| e.to_string())?{
         return Err("Invalid username or password".to_string());
     }
-    create_session(&user, &state.mongo).await
+    create_session(&user, database).await
 }
 
-pub async fn logout_service(state: &State<DbClients>, session_id : String) -> Result<(), String>{
-    let session_collection  : Collection<Document>    = state.mongo.collection("sessions");
-    validate_session(&session_id, &state.mongo).await.map_err(|e| e.to_string())?;
+pub async fn logout_service(database : &mongodb::Database, session_id : String) -> Result<(), String>{
+    let session_collection  : Collection<Document>    = database.collection("sessions");
+    validate_session(&session_id, database).await.map_err(|e| e.to_string())?;
     delete_session(&session_id, &session_collection).await.map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -154,8 +153,7 @@ mod tests {
     use super::*;
     use dotenv::dotenv;
     use std::env;
-    use mongodb::bson::oid::ObjectId;
-    use std::str::FromStr;
+
     
     async fn get_mongo() -> mongodb::Database { 
         dotenv().ok();
@@ -172,7 +170,8 @@ mod tests {
             id: None,
             user_name: "vasilis".to_string(),
             password: "strongpassowrd".to_string(),
-            email: "vasileiosnl@gmail.com".to_string(),            role : crate::models::UserRole::Admin,
+            email: "vasileiosnl@gmail.com".to_string(),
+            role : crate::models::UserRole::Admin,
             max_users: None,
             system: vec![ crate::models::System::Invoicing ],
             database: "userdb".to_string(),
