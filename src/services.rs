@@ -3,7 +3,7 @@ use bson::Document;
 use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use rocket::State;
-use chrono::Utc;
+use chrono::{Utc, Duration};
 use std::str::FromStr;
 
 
@@ -13,6 +13,13 @@ pub async fn login_service(state: &State<DbClients>, login_user: LoginUser)-> Re
         return Err("Invalid username or password".to_string());
     }
     create_session(&user, &state.mongo).await
+}
+
+pub async fn logout_service(state: &State<DbClients>, session_id : String) -> Result<(), String>{
+    let session_collection  : Collection<Document>    = state.mongo.collection("sessions");
+    validate_session(&session_id, &state.mongo).await.map_err(|e| e.to_string())?;
+    delete_session(&session_id, &session_collection).await.map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 //Get user from mongo database by name
@@ -67,13 +74,13 @@ pub async fn get_users_num(database : &mongodb::Database, db_name: String)-> Res
 }
 
 async fn create_session(user: &User, database : &mongodb::Database,) -> Result<String, String>{
+    if user.expiration_dt < Utc::now(){
+        return Err("Subscription has expired".to_string());
+    }
     let session_collection = database.collection("sessions");
     let session = UserSession{
         id: None,
-        user_id: user.id.unwrap().to_string(),
-        database: user.database.clone(),
-        system: user.system.to_owned(),
-        max_users: user.max_users.to_owned(),
+        user: user.clone(),
         dt: Utc::now()
     };
     let session_ser = bson::to_bson(&session).map_err(|e| e.to_string())?;
@@ -85,20 +92,28 @@ async fn create_session(user: &User, database : &mongodb::Database,) -> Result<S
         Some(id) => id.to_string(),
         None => return Err(String::from("User id is not set"))
     };
-    let _ = delete_session(user_id, &session_collection).await?;
+    let _ = delete_sessions(user_id, &session_collection).await?;
     let ins_id =session_collection.insert_one(session_doc.to_owned(),  None).await.map_err(|e| e.to_string())?;
     Ok(ins_id.inserted_id.as_object_id().unwrap().to_string())
 
 }
 
-pub async fn delete_session(user_id: String, session_collection: &Collection<Document>)-> Result<(), String>{
-    let filter = doc!{"user_id": user_id};
+pub async fn delete_sessions(user_id: String, session_collection: &Collection<Document>)-> Result<(), String>{
+    let filter = doc!{"user": { "_id" : user_id}};
     let _ = session_collection.delete_many(filter, None).await.map_err(|e| e.to_string())?;
     Ok(())
     
 }
 
-pub async fn get_session(session_id: String, database : &mongodb::Database)-> Result<Option<UserSession>, String>{
+pub async fn delete_session(session_id: &String, session_collection: &Collection<Document>)-> Result<(), String>{
+    let obj_id = ObjectId::from_str(session_id.as_str()).map_err(|e| e.to_string())?;
+    let filter = doc!{"_id": obj_id};
+    let _ = session_collection.delete_one(filter, None).await.map_err(|e| e.to_string())?;
+    Ok(())
+
+}
+
+pub async fn get_session(session_id: &String, database : &mongodb::Database)-> Result<Option<UserSession>, String>{
     let session_collection = database.collection::<UserSession>("sessions");
     let obj_id = ObjectId::from_str(session_id.as_str()).map_err(|e| e.to_string())?;
     let session = session_collection.find_one(doc! {"_id" : obj_id },None).await.map_err(|e| e.to_string())?;
@@ -112,6 +127,23 @@ pub async fn update_session_dt(session_id: String, database : &mongodb::Database
     let update = doc!{ "$currentDate" : {"dt" : true}};
     session_collection.update_one(filter, update, None).await.map_err(|e| e.to_string())?;
     Ok(())
+}
+
+pub async fn validate_session(session_id: &String, database : &mongodb::Database) -> Result<UserSession, String> {
+    let session_opt = get_session(&session_id, database).await.map_err(|e| e.to_string())?;
+    let session = match session_opt {
+        Some(s) => s,
+        None => return Err("No session found".to_string())
+    };
+    let valid_till = session.dt + Duration::hours(1);
+    if valid_till < Utc::now() {
+        return Err("Session has expired".to_string());
+    }
+    if session.user.expiration_dt < Utc::now() {
+        return Err("Subscription has expired".to_string());
+    }
+    update_session_dt(session_id.clone(), database).await.map_err(|e| e.to_string())?;
+    Ok(session)
 }
 
 

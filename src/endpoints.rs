@@ -5,9 +5,9 @@ use crate::services::*;
 
 
 
-#[get("/")]
-pub fn world() -> &'static str {
-    "Hello, world!"
+#[get("/logout")]
+pub async fn logout(state: &State<DbClients>,session_id : SessionId) -> Result<(), Json<ApiError>>{
+    logout_service(state, session_id.session_id).await.map_err( |e| Json( ApiError{ error:e}))
 }
 
 
@@ -17,3 +17,4 @@ pub async fn login(user_login_js: Json<LoginUser>, state: &State<DbClients>) -> 
     let session_id = login_service(state, login_user).await.map_err( |e| Json( ApiError{ error:e}))?;
     Ok(Json(SessionId{session_id}))
 }
+
