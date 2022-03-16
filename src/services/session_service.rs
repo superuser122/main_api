@@ -1,4 +1,4 @@
-use crate::models::{user::{User, LoginUser}, sessions::{UserSession, SessionId}};
+use crate::models::{user::User, sessions::UserSession};
 use bson::Document;
 use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
 use chrono::{Utc, Duration};
@@ -86,10 +86,7 @@ mod tests {
     use dotenv::dotenv;
     use std::env;
     use crate::services::user_service::get_user;
-    use crate::models::{user::{User, LoginUser}, sessions::{UserSession, SessionId}};
 
-
-    
     async fn get_mongo() -> mongodb::Database { 
         dotenv().ok();
         let mongo_url = env::var("MONGO_URL").unwrap();

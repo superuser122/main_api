@@ -5,6 +5,7 @@ pub mod endpoints;
 use dotenv::dotenv;
 use rocket::routes;
 use std::env;
+use endpoints::*;
 
 
 #[rocket::main]
@@ -23,7 +24,7 @@ async fn main() {
 
 
     let _ = rocket::build()
-                .mount("/api", routes![endpoints::login, endpoints::logout])
+                .mount("/api", routes![auth_user::login, auth_user::logout])
                 .manage(mongo)
                 .launch()
                 .await;

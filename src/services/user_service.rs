@@ -1,4 +1,4 @@
-use crate::models::{user::{User, LoginUser}, sessions::{UserSession, SessionId}};
+use crate::models::user::{User, LoginUser};
 use bson::Document;
 use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
 use bcrypt::{hash, verify};
@@ -79,7 +79,7 @@ mod tests {
     use super::*;
     use dotenv::dotenv;
     use std::env;
-    use crate::models::{user::{User, LoginUser, UserRole, System}, sessions::{UserSession, SessionId}};
+    use crate::models::user::{User, UserRole, System};
 
 
     
