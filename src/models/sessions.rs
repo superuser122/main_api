@@ -4,7 +4,8 @@ use serde::{Serialize, Deserialize};
 use mongodb::bson::oid::ObjectId;
 use rocket::request::{FromRequest, Outcome, Request};
 use rocket::serde::json::Json;
-use crate::models::{user::User,  api_response::ApiError};
+use crate::models::{user::User,  api_response::{ApiResponse, ApiError}};
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserSession {
@@ -21,12 +22,15 @@ pub struct SessionId{
 }
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for SessionId{
-    type Error = Json<ApiError>;
+    type Error = Json<ApiResponse<ApiError>>;
 
     async fn from_request(req: &'r Request<'_>) ->Outcome<Self, Self::Error>{
         match req.headers().get_one("session"){
             Some(sess_id) => Outcome::Success(SessionId{session_id: sess_id.to_string()}),
-            None => Outcome::Failure((Status::Unauthorized, Json(ApiError{ error: String::from("Unauthorized")}))),
+            None => {
+                let api_error = ApiResponse::error(vec![(String::from("55"), String::from("Unauthorized"))]);
+                Outcome::Failure((Status::Unauthorized, Json(api_error)))
+            }
         }
     }
 }

@@ -68,7 +68,7 @@ sudo dd if=/dev/sdb of=/dev/sdc status=progress
 curl --header "Content-Type: application/json" --request POST --data '{"user_name":"vasilis","password":"strongpassowrd"}' http://localhost:8000/api/login
 
 #logout call 
-curl -H "session: "--request GET  http://localhost:8000/api/logout
+curl -H "session:" --request GET  http://localhost:8000/api/logout
 
 
 #VISUAL STUDIO CODE
