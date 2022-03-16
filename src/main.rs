@@ -1,9 +1,9 @@
-#[macro_use]
-extern crate rocket;
+#[macro_use] extern crate rocket;
 pub mod models;
 pub mod services;
 pub mod endpoints;
 use dotenv::dotenv;
+use rocket::routes;
 use std::env;
 
 

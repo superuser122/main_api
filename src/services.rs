@@ -1,2 +1,2 @@
-pub mod users;
-pub mod sessions;
+pub mod user_service;
+pub mod session_service;

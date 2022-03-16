@@ -4,7 +4,7 @@ use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
 use bcrypt::{hash, verify};
 use std::str::FromStr;
 
-use crate::services::sessions::*;
+use crate::services::session_service::*;
 
 pub async fn login_service(database : &mongodb::Database, login_user: LoginUser)-> Result<String, String>{
     let user = get_user(database, &login_user.user_name).await?;

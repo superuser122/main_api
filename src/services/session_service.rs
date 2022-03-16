@@ -85,7 +85,7 @@ mod tests {
     use super::*;
     use dotenv::dotenv;
     use std::env;
-    use crate::services::users::get_user;
+    use crate::services::user_service::get_user;
     use crate::models::{user::{User, LoginUser}, sessions::{UserSession, SessionId}};
 
 
