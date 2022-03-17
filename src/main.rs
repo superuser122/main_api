@@ -24,7 +24,14 @@ async fn main() {
 
 
     let _ = rocket::build()
-                .mount("/api", routes![auth_user::login, auth_user::logout])
+                .mount("/api", routes![
+                    auth_user::login,
+                    auth_user::logout,
+                    user_crud::read_self,
+                    user_crud::delete,
+                    user_crud::read_user,
+                    user_crud::create,
+                    ])
                 .manage(mongo)
                 .launch()
                 .await;
