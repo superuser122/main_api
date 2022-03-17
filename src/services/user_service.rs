@@ -33,6 +33,10 @@ pub async fn get_user(database : &mongodb::Database, user_name: &String)-> Resul
 }
 
 pub async fn create_user(database : &mongodb::Database, mut user: User) -> Result<(), (String, String)>{
+    let exists = get_user(database,& user.user_name).await;
+    if exists.is_ok() {
+        return Err((String::from("11"),"Usename already exists".to_string()))
+    }
     user.password = hash(user.password, 4).map_err(|e| (String::from("20"), e.to_string()))?;
     let user_collection = database.collection("users");
     let user_bson = bson::to_bson(&user).map_err(|e| (String::from("20"), e.to_string()))?;
@@ -65,10 +69,10 @@ pub async fn update_user(database : &mongodb::Database, mut user: User) -> Resul
     Ok(())
 }
 
-pub async fn get_users_num(database : &mongodb::Database, db_name: String)-> Result<u8, String>{
+pub async fn get_users_num(database : &mongodb::Database, db_name: String)-> Result<u8, (String, String)>{
     let user_collection : Collection<Document> = database.collection("users");
     let filter = doc!{"database": db_name};
-    let doc_num = user_collection.count_documents(filter, None).await.map_err(|e| e.to_string())?;
+    let doc_num = user_collection.count_documents(filter, None).await.map_err(|e| (String::from("20"), e.to_string()))?;
     Ok(doc_num as u8)
 }
 
