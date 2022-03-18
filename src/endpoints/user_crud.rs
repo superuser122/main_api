@@ -20,7 +20,7 @@ pub async fn create(user: Json<User>, mongo: &State<mongodb::Database>, session_
         },
         UserRole::Owner =>{
             if user.role != UserRole::User || user.database != session.user.database {
-                return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user creation"))]));
+                return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized operation"))]));
             }
             let user_num = match user_service::get_users_num(mongo, session.user.database ).await {
                 Ok(num) => num,
@@ -41,7 +41,7 @@ pub async fn create(user: Json<User>, mongo: &State<mongodb::Database>, session_
                 Err(error) => return Json(ApiResponse::error(vec![error])),
             }
         },
-        UserRole::User => return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user creation"))]))
+        UserRole::User => return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized operation"))]))
     }
 }
 
@@ -66,14 +66,14 @@ pub async fn delete(mongo: &State<mongodb::Database>, user_name: String, session
         },
         UserRole::Owner =>{
             if user.role != UserRole::User && user.database != session.user.database {
-                return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user deletion"))]));
+                return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized operation"))]));
             }
             match user_service::delete_user(mongo, user_id).await {
                 Ok(_) => return Json(ApiResponse::ok()),
                 Err(error) => return Json(ApiResponse::error(vec![error])),
             }
         },
-        UserRole::User => return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user creation"))]))
+        UserRole::User => return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized operation"))]))
     }
 }
 
