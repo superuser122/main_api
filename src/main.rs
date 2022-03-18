@@ -21,8 +21,6 @@ async fn main() {
                             .await.expect("There was an error parsing mongodb client")
                             .database("userdb");
 
-
-
     let _ = rocket::build()
                 .mount("/api", routes![
                     auth_user::login,
@@ -47,20 +45,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn check_redis_url() {
+    fn check_mongo_url() {
         dotenv().ok();
-        let redis_url = env::var("REDIS_URL");
-
-        assert!(redis_url.is_ok());
+        let mongo_url = env::var("MONGO_URL");
+        assert!(mongo_url.is_ok());
 
     }
 
-
-    #[test]
-    fn test_redis_client() {
+    #[async_test]
+    async fn check_mongo_client() {
         dotenv().ok();
-        let redis = redis::Client::open(env::var("REDIS_URL").unwrap());
+        let mongo_url = env::var("MONGO_URL").unwrap();
+        let mongo = mongodb::Client::with_uri_str(mongo_url).await;
+        assert!(mongo.is_ok());
 
-        assert!(redis.is_ok());
     }
+
 }
