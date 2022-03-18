@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 use mongodb::bson::oid::ObjectId;
 
@@ -15,8 +14,7 @@ pub struct User{
     pub max_users : Option<u8>,
     pub system: Vec<System>,
     pub database: String,
-    #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
-    pub expiration_dt: DateTime<Utc>,
+    pub expiration_dt: String,
 }
 
 impl User{
@@ -30,7 +28,7 @@ impl User{
             max_users: self.max_users,
             system: self.system.to_owned(),
             database: self.database.clone(),
-            expiration_dt: self.expiration_dt,
+            expiration_dt: self.expiration_dt.clone(),
         }
     }
 }
@@ -50,5 +48,6 @@ pub enum UserRole {
 
 #[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum System {
-    Invoicing
+    Invoicing,
+    PayRole
 }

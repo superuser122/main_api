@@ -3,6 +3,7 @@ use bson::Document;
 use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
 use bcrypt::{hash, verify};
 use std::str::FromStr;
+use rocket::futures::StreamExt;
 
 use crate::services::session_service::*;
 
@@ -31,6 +32,20 @@ pub async fn get_user(database : &mongodb::Database, user_name: &String)-> Resul
         None => Err((String::from("11"),"Invalid username or password".to_string()))
     }
 }
+
+//Get user from mongo database by name
+pub async fn get_users(database : &mongodb::Database, dbname: &String)-> Result<Vec<User>, (String, String)>{
+    let user_collection = database.collection::<User>("users");
+    let filter = doc!{"database": dbname};
+    let mut result = user_collection.find(filter, None).await.map_err(|e| (String::from("20"), e.to_string()))?;
+    let mut users: Vec<User> = Vec::new();
+    while let Some(user) = result.next().await {
+        users.push(user.map_err(|e| (String::from("20"), e.to_string()))?);
+    }
+    Ok(users)
+}
+
+
 
 pub async fn create_user(database : &mongodb::Database, mut user: User) -> Result<(), (String, String)>{
     let exists = get_user(database,& user.user_name).await;
@@ -68,6 +83,15 @@ pub async fn update_user(database : &mongodb::Database, mut user: User) -> Resul
     user_collection.find_one_and_replace(filter, user_doc, None).await.map_err(|e| (String::from("20"), e.to_string()))?;
     Ok(())
 }
+
+pub async fn update_expitation(database : &mongodb::Database, dbname: String, date: String ) -> Result<(), (String, String)>{
+    let user_collection : Collection<Document> = database.collection("users");
+    let filter = doc!{"database": dbname};
+    let update = doc!{"$set" : {"expiration_dt": date}};
+    user_collection.update_many(filter, update, None).await.map_err(|e| (String::from("20"), e.to_string()))?;
+    Ok(())
+}
+
 
 pub async fn get_users_num(database : &mongodb::Database, db_name: String)-> Result<u8, (String, String)>{
     let user_collection : Collection<Document> = database.collection("users");
@@ -107,7 +131,7 @@ mod tests {
             max_users: None,
             system: vec![ System::Invoicing ],
             database: "userdb".to_string(),
-            expiration_dt: chrono::MAX_DATETIME,
+            expiration_dt: "20251010".to_string(),
         };
         let res = create_user(&mongo, user).await;
 

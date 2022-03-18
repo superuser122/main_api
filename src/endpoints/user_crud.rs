@@ -2,7 +2,7 @@ use rocket::State;
 use rocket::serde::json::Json;
 use crate::{services::{session_service::{validate_session}, user_service}, };
 use crate::models::{api_response::{ApiResponse, ApiError}, user::{User, UserRole}, sessions::SessionId}; 
-
+use bcrypt::hash;
 
 #[post("/user/create",format = "json", data="<user>")]
 pub async fn create(user: Json<User>, mongo: &State<mongodb::Database>, session_id: SessionId) -> Json<ApiResponse<Vec<ApiError>>>{
@@ -19,15 +19,18 @@ pub async fn create(user: Json<User>, mongo: &State<mongodb::Database>, session_
             }
         },
         UserRole::Owner =>{
-            if user.role != UserRole::User && user.database != session.user.database {
+            if user.role != UserRole::User || user.database != session.user.database {
                 return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user creation"))]));
             }
             let user_num = match user_service::get_users_num(mongo, session.user.database ).await {
                 Ok(num) => num,
                 Err(error) => return Json(ApiResponse::error(vec![error])),
             };
-            //Todo: deal with unwrap
-            if session.user.max_users.unwrap() != user_num {
+            let max_users = match session.user.max_users {
+                Some(m) => m,
+                None => return Json(ApiResponse::error(vec![(String::from("11"), String::from("No max users value"))])),
+            };
+            if max_users >= user_num {
                 return Json(ApiResponse::error(vec![(String::from("11"), String::from("Max number of users"))]));
             }
             if session.user.expiration_dt != user.expiration_dt {
@@ -98,7 +101,7 @@ pub async fn read_user(mongo: &State<mongodb::Database>, session_id : SessionId,
 }
 
 #[get("/user/readself")]
-pub async fn read_self(mongo: &State<mongodb::Database>, session_id : SessionId) -> Json<ApiResponse<User>>{
+pub async fn read_self(mongo: &State<mongodb::Database>, session_id: SessionId) -> Json<ApiResponse<User>>{
     match validate_session(&session_id.session_id, mongo).await{
         Ok(mut session) => {
             session.user.id = None;
@@ -108,4 +111,80 @@ pub async fn read_self(mongo: &State<mongodb::Database>, session_id : SessionId)
         Err(error) => return Json(ApiResponse::error(vec![error])),
     }
 }
+
+#[get("/user/expdate/<database>/<date>")]
+pub async fn update_expdate(mongo: &State<mongodb::Database>, session_id: SessionId, database: String, date: String ) -> Json<ApiResponse<Vec<ApiError>>>{
+    let session = match validate_session(&session_id.session_id, mongo).await {
+        Ok(session) => session,
+        Err(error) => return Json(ApiResponse::error(vec![error])),
+    };
+    if session.user.role != UserRole::Admin {
+        return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized oparation"))]));
+    }
+    match user_service::update_expitation(mongo, database, date).await {
+        Ok(_) => return Json(ApiResponse::ok()),
+        Err(error) => return Json(ApiResponse::error(vec![error])),
+    }
+}
+
+#[post("/user/updateself",format = "json", data="<user>")]
+pub async fn update_self(user: Json<User>, session_id: SessionId, mongo: &State<mongodb::Database>) -> Json<ApiResponse<Vec<ApiError>>>{
+    let updated_user = user.into_inner();
+    let mut session = match validate_session(&session_id.session_id, mongo).await {
+        Ok(session) => session,
+        Err(error) => return Json(ApiResponse::error(vec![error])),
+    };
+    session.user.password = match hash(updated_user.password, 4) {
+        Ok(p) => p,
+        Err(error) => return Json(ApiResponse::error(vec![(String::from("11"), error.to_string())]))
+    };
+    session.user.email = updated_user.email;
+    if session.user.role == UserRole::Admin{
+        session.user.database = updated_user.database;
+        session.user.system = updated_user.system.to_owned();
+    }
+    match user_service::update_user(mongo, session.user).await{
+        Ok(_) => return Json(ApiResponse::ok()),
+        Err(error) => return Json(ApiResponse::error(vec![error])),
+    }
+}
+
+#[post("/user/update",format = "json", data="<user>")]
+pub async fn update(user: Json<User>, session_id: SessionId, mongo: &State<mongodb::Database>) -> Json<ApiResponse<Vec<ApiError>>>{
+    let session = match validate_session(&session_id.session_id, mongo).await {
+        Ok(session) => session,
+        Err(error) => return Json(ApiResponse::error(vec![error])),
+    };
+    let updated_user = user.into_inner();
+    let mut old_user = match user_service::get_user(mongo, &updated_user.user_name).await {
+        Ok(user) => user,
+        Err(error) => return Json(ApiResponse::error(vec![error])),
+    };
+
+    match session.user.role {
+        UserRole::Admin => {
+            old_user.password = match hash(updated_user.password, 4) {
+                Ok(p) => p,
+                Err(error) => return Json(ApiResponse::error(vec![(String::from("11"), error.to_string())]))
+            };
+            old_user.email = updated_user.email;
+            old_user.system = updated_user.system.to_owned();
+            old_user.database = updated_user.database;
+            old_user.max_users = updated_user.max_users;
+            old_user.role = updated_user.role;
+            old_user.expiration_dt = updated_user.expiration_dt;
+        },
+        UserRole::Owner =>{
+            old_user.email = updated_user.email;
+            old_user.system = updated_user.system.to_owned();
+        },
+        UserRole::User => return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user request"))]))
+    }
+
+    match user_service::update_user(mongo, old_user).await{
+        Ok(_) => return Json(ApiResponse::ok()),
+        Err(error) => return Json(ApiResponse::error(vec![error])),
+    }
+}
+
 

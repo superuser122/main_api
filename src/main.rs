@@ -31,6 +31,8 @@ async fn main() {
                     user_crud::delete,
                     user_crud::read_user,
                     user_crud::create,
+                    user_crud::update,
+                    user_crud::update_self,
                     ])
                 .manage(mongo)
                 .launch()

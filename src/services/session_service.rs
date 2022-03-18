@@ -1,13 +1,12 @@
 use crate::models::{user::User, sessions::UserSession};
 use bson::Document;
 use mongodb::{bson::{doc, oid::ObjectId,}, Collection};
-use chrono::{Utc, Duration};
+use chrono::{Utc, Duration, NaiveDate, NaiveDateTime, DateTime};
 use std::str::FromStr;
 
 pub async fn create_session(user: &User, database : &mongodb::Database,) -> Result<String, (String,String)>{
-    if user.expiration_dt < Utc::now(){
-        return Err((String::from("11"),"Subscription has expired".to_string()));
-    }
+    
+    let _ = check_expiration(&user.expiration_dt)?;
     let session_collection = database.collection("sessions");
     let session = UserSession{
         id: None,
@@ -70,11 +69,22 @@ pub async fn validate_session(session_id: &String, database : &mongodb::Database
     if valid_till < Utc::now() {
         return Err((String::from("11"),"Session has expired".to_string()));
     }
-    if session.user.expiration_dt < Utc::now() {
-        return Err((String::from("11"),"Subscription has expired".to_string()));
-    }
+    let _ = check_expiration(&session.user.expiration_dt)?;
     update_session_dt(session_id.clone(), database).await?;
     Ok(session)
+}
+fn check_expiration(expiration: &String) -> Result<(), (String, String)>{
+    // From string to a NaiveDate
+    let date_only = NaiveDate::parse_from_str(expiration.as_str(), "%Y%m%d").map_err(|e| (String::from("11"), e.to_string()))?;
+    // Add some default time to convert it into a NaiveDateTime
+    let naive_datetime: NaiveDateTime = date_only.and_hms(0,0,0);
+    // Add a timezone to the object to convert it into a DateTime<UTC>
+    let datetime_utc = DateTime::<Utc>::from_utc(naive_datetime, Utc);
+    if datetime_utc < Utc::now() {
+        return Err((String::from("11"),"Subscription has expired".to_string()));
+    }
+    Ok(())
+
 }
 
 
@@ -112,4 +122,6 @@ mod tests {
         let res = update_session_dt(user.id.unwrap().to_string(), &mongo).await;
         assert!(res.is_ok());
     }
+
+
 }
