@@ -160,6 +160,8 @@ pub async fn update(user: Json<User>, session_id: SessionId, mongo: &State<mongo
         Ok(user) => user,
         Err(error) => return Json(ApiResponse::error(vec![error])),
     };
+    old_user.email = updated_user.email;
+    old_user.system = updated_user.system.to_owned();
 
     match session.user.role {
         UserRole::Admin => {
@@ -167,18 +169,13 @@ pub async fn update(user: Json<User>, session_id: SessionId, mongo: &State<mongo
                 Ok(p) => p,
                 Err(error) => return Json(ApiResponse::error(vec![(String::from("11"), error.to_string())]))
             };
-            old_user.email = updated_user.email;
-            old_user.system = updated_user.system.to_owned();
             old_user.database = updated_user.database;
             old_user.max_users = updated_user.max_users;
             old_user.role = updated_user.role;
             old_user.expiration_dt = updated_user.expiration_dt;
         },
-        UserRole::Owner =>{
-            old_user.email = updated_user.email;
-            old_user.system = updated_user.system.to_owned();
-        },
-        UserRole::User => return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user request"))]))
+        UserRole::User => return Json(ApiResponse::error(vec![(String::from("11"), String::from("Unauthorized user request"))])),
+        _ => {}
     }
 
     match user_service::update_user(mongo, old_user).await{
