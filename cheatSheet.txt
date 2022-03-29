@@ -52,6 +52,10 @@ mongodb://developer:deve-1992@localhost:27888/
 #mongo cli
 sudo docker exec -it mongo-on-docker mongo -u developer -p deve-1992
 
+#Docker MySQL setup
+https://phoenixnap.com/kb/mysql-docker-container
+
+
 
 #CLI
 
