@@ -80,3 +80,6 @@ curl -H "session:" --request GET  http://localhost:8000/api/logout
 Editor > Unicode Highlight: Non Basic ASCII
 
 Editor > Unicode Highlight: Ambiguous Characters
+
+#Start app without console 
+#![windows_subsystem = "windows"]
